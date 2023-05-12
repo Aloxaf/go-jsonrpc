@@ -600,6 +600,8 @@ func (c *wsConn) tryReconnect(ctx context.Context) bool {
 			select {
 			case <-ctx.Done():
 				break
+			case <-c.stop:
+				return
 			default:
 				continue
 			}

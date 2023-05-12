@@ -48,7 +48,7 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func (s *RPCServer) handleWS(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (s *RPCServer) handleWS(ctx context.Context, w http.ResponseWriter, r *http.Request, stopChan <-chan struct{}) {
 	// TODO: allow setting
 	// (note that we still are mostly covered by jwt tokens)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -67,6 +67,7 @@ func (s *RPCServer) handleWS(ctx context.Context, w http.ResponseWriter, r *http
 		conn:         c,
 		handler:      s,
 		pingInterval: s.pingInterval,
+		stop:         stopChan,
 		exiting:      make(chan struct{}),
 	}
 
@@ -91,12 +92,12 @@ func (s *RPCServer) handleWS(ctx context.Context, w http.ResponseWriter, r *http
 }
 
 // TODO: return errors to clients per spec
-func (s *RPCServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *RPCServer) ServeHTTP(w http.ResponseWriter, r *http.Request, stopChan <-chan struct{}) {
 	ctx := r.Context()
 
 	h := strings.ToLower(r.Header.Get("Connection"))
 	if strings.Contains(h, "upgrade") {
-		s.handleWS(ctx, w, r)
+		s.handleWS(ctx, w, r, stopChan)
 		return
 	}
 
